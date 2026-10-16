@@ -12,6 +12,18 @@ StayAliveMC disables Windows' automatic suspension for the Minecraft UWP package
 
 This does not prevent server AFK kicks, network failures, system sleep, or pauses implemented by the game itself. A successful apply confirms that Windows accepted the setting, not that a specific server connection will stay alive. Keeping a game running in the background can increase power use.
 
+## Download and install
+
+Get the latest build from [GitHub Releases](https://github.com/Riyoway/StayAliveMC/releases/latest):
+
+- **`StayAliveMC-<version>-windows-x64-setup.exe`**: installs for the current user without administrator privileges, creates a Start menu shortcut, and adds an entry to Windows' installed apps. A desktop shortcut is optional.
+- **`StayAliveMC-<version>-windows-x64-portable.zip`**: extract to a permanent folder and run the executable directly.
+- **`SHA256SUMS.txt`**: SHA-256 hashes for both downloads.
+
+Exit StayAliveMC before upgrading or uninstalling. Uninstalling removes the startup shortcut if it points to the installed copy; a shortcut belonging to a separate portable copy is preserved. Automatic apply at sign-in is configured inside the app and is off by default for a new user.
+
+The application and installer are currently unsigned.
+
 ## Usage
 
 1. Put `StayAliveMC.exe` in a permanent folder and open it.
@@ -50,7 +62,18 @@ ctest --test-dir build -C Release --output-on-failure
 
 The standalone executable is `build/Release/StayAliveMC.exe`. The C++ runtime is linked statically. You can also open the repository as a CMake project in Visual Studio.
 
-The Windows CI workflow builds and tests the app, then uploads a `StayAliveMC-windows-x64` artifact containing the executable, README, and license. These artifacts are development builds, not signed installers.
+### Build the installer
+
+The packaging scripts use Inno Setup 7.1.0, downloaded from its official release and verified against a pinned SHA-256:
+
+```powershell
+./scripts/install-inno.ps1
+./scripts/package.ps1
+```
+
+This creates a versioned installer, portable ZIP, and `SHA256SUMS.txt` under `dist/`. To use an existing Inno Setup compiler, pass `-Compiler 'C:\path\to\ISCC.exe'` to `package.ps1`.
+
+The Windows CI workflow builds and tests the app and installer, then uploads the same files as a `StayAliveMC-windows-x64` artifact.
 
 ### Tests
 
@@ -64,6 +87,8 @@ An optional integration test briefly enables and restores the setting on the ins
 
 Run this with Minecraft closed. Actual minimized gameplay and multiplayer behavior must be checked with your own supported game version.
 
+`./scripts/test-installer.ps1` additionally verifies silent installation, upgrade, launch, uninstall, and startup shortcut cleanup. It requires a clean user installation state and refuses to run if an existing installation or StayAliveMC shortcut is present.
+
 ## How it works
 
 The app resolves the installed package's full name using [`FindPackagesByPackageFamily`](https://learn.microsoft.com/en-us/windows/win32/api/appmodel/nf-appmodel-findpackagesbypackagefamily), then calls [`IPackageDebugSettings::EnableDebugging`](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ipackagedebugsettings-enabledebugging) without attaching a debugger.
@@ -76,13 +101,16 @@ No game files, worlds, or network traffic are modified. Startup uses the Windows
 
 ```text
 CMakeLists.txt          Build and test entry point
-assets/icon.ico        Application icon
+assets/icon.png        Original application icon
+assets/icon.ico        Multi-resolution Windows icon
 core/main.cpp          Native window, tray, and process lifetime
 core/package_debug.*   Package discovery and debug session ownership
 core/startup.*         Current-user startup shortcut
 core/options.h         Command-line parsing
 core/app.*             Dialog resources and application manifest
 tests/tests.cpp        Windows tests and optional integration check
+installer/             Per-user Windows installer definition
+scripts/               Compiler setup, packaging, and installer smoke test
 .github/workflows/     Windows build and test workflow
 ```
 

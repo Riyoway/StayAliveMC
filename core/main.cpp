@@ -64,15 +64,18 @@ INT_PTR CALLBACK DialogProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         if (message == WM_INITDIALOG) {
             state = reinterpret_cast<WindowState*>(lParam);
             SetWindowLongPtrW(window, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
-            const auto icon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP));
+            const auto icon = static_cast<HICON>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP),
+                IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_SHARED));
+            const auto smallIcon = static_cast<HICON>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDI_APP),
+                IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_SHARED));
             SendMessageW(window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
-            SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(icon));
+            SendMessageW(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(smallIcon));
             state->tray.cbSize = sizeof(state->tray);
             state->tray.hWnd = window;
             state->tray.uID = 1;
             state->tray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
             state->tray.uCallbackMessage = TrayMessage;
-            state->tray.hIcon = icon;
+            state->tray.hIcon = smallIcon;
             wcscpy_s(state->tray.szTip, L"StayAliveMC - open to view status");
             state->trayAdded = Shell_NotifyIconW(NIM_ADD, &state->tray) != FALSE;
             UpdateButtons(window, *state);
