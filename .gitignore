@@ -1,0 +1,17 @@
+/_archive/
+/build*/
+/dist/
+**/.vs/
+**/Debug/
+**/Release/
+**/x64/
+**/x86/
+*.user
+*.suo
+*.exe
+*.pdb
+*.obj
+*.ilk
+*.log
+.env*
+node_modules/
